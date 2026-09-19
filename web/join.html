@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sentinell — tham gia từ điện thoại</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script data-sen="theme">
+    // Đặt chế độ màu trước khi vẽ, tránh chớp sáng một nhịp.
+    try {
+      const t = localStorage.getItem("sentinell-theme");
+      if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+    } catch { /* bị chặn thì dùng theo hệ thống */ }
+  </script>
+</head>
+<body class="join-shell">
+
+<div class="join-page">
+  <header class="join-top">
+    <span class="brand"><span aria-hidden="true">🛡️</span> Sentinell</span>
+    <span class="spacer"></span>
+    <span class="row"><span id="connDot" class="dot"></span>
+      <span id="connText" class="muted" style="font-size:12.5px">đang chuẩn bị…</span></span>
+    <button class="icon-btn" id="themeBtn" title="Đổi nền sáng/tối"><span id="themeIcon">🌗</span></button>
+  </header>
+
+  <div class="join-body">
+
+    <!-- ======================= SẢNH ======================= -->
+    <section id="lobby" class="lobby">
+      <h2>Trò chuyện với máy tính</h2>
+      <p class="center" id="hostInfo">Đang đọc thông tin máy tính…</p>
+      <div style="display:flex;justify-content:center">
+        <span class="pill" id="pinBadge">chưa có khóa của máy tính</span>
+      </div>
+
+      <button class="btn" id="joinBtn" style="justify-content:center">Kết nối &amp; bắt tay mã hóa</button>
+      <div id="joinNotice" class="join-notice hidden"></div>
+
+      <div class="tile">
+        <h3>Mã QR của điện thoại này</h3>
+        <p class="pane-note">Cho máy tính quét mã này nếu bạn muốn nó xác minh được bạn.</p>
+        <div class="qr-center" id="myQr"></div>
+        <div class="row" style="justify-content:center;flex-wrap:wrap">
+          <button class="btn ghost sm" id="saveMyQr">💾 Lưu ảnh QR</button>
+          <button class="btn ghost sm" id="copyMyKey">📋 Chép chuỗi khóa</button>
+        </div>
+        <div class="kv" style="justify-content:center">vân tay: <code class="mono" id="myFp">—</code></div>
+      </div>
+
+      <p class="center" style="font-size:12.5px">Mã hóa chạy ngay trong trình duyệt điện thoại này.
+        Máy tính không hề giữ khóa của bạn.</p>
+    </section>
+
+    <!-- ======================= PHÒNG CHAT ======================= -->
+    <section id="chat" class="chat hidden">
+      <header class="chat-head">
+        <span class="avatar sm" id="peerAvatar">--</span>
+        <div class="who">
+          <b id="peerName">—</b>
+          <span class="sub" id="peerFp"></span>
+        </div>
+        <div class="acts">
+          <span class="pill" id="trustBadge">chưa xác minh</span>
+          <button class="icon-btn" id="logToggle" title="Kiểm chứng bảo mật">🛡</button>
+          <button class="icon-btn" id="leaveBtn" title="Ngắt kết nối">⏻</button>
+        </div>
+      </header>
+
+      <div class="messages" id="messages"></div>
+
+      <div id="logWrap" class="hidden" style="padding:0 12px 10px">
+        <div class="insp-sec" style="margin-bottom:10px">
+          <h3>Safety number — dãy số kiểm chứng</h3>
+          <div class="safety-num mono" id="safetyNum">—</div>
+          <p class="pane-note" style="font-size:12px">Đọc dãy số này cho nhau nghe. Hai bên khớp nhau nghĩa là không có ai chen vào giữa.</p>
+        </div>
+        <div class="insp-sec">
+          <h3>Nhật ký giao thức</h3>
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+      <!-- Dải tiến độ truyền tệp: chỉ hiện khi đang gửi/nhận. -->
+      <div class="xfer hidden" id="xfer">
+        <span class="xfer-label" id="xferLabel">—</span>
+        <span class="xfer-track"><span class="xfer-fill" id="xferFill"></span></span>
+        <span class="xfer-pct" id="xferPct">0%</span>
+      </div>
+
+      <div class="composer">
+        <button class="icon-btn" id="attachBtn" title="Gửi file/ảnh">📎</button>
+        <input type="file" id="fileInput" class="hidden" />
+        <input type="text" id="msgInput" placeholder="Nhắn tin…" autocomplete="off" />
+        <button class="send-btn" id="sendBtn" title="Gửi">➤</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<script src="vendor/qrcode.js"></script>
+<script type="module" src="js/join.js"></script>
+</body>
+</html>

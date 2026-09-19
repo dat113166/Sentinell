@@ -1,0 +1,81 @@
+{
+  "expo": {
+    "name": "Sentinell",
+    "slug": "sentinell",
+    "version": "3.17.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0b1020",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "vn.hdu.sentinell",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Sentinell dùng camera để quét mã QR trao đổi khóa với thiết bị khác.",
+        "NSLocalNetworkUsageDescription": "Sentinell tìm và kết nối thiết bị khác trên cùng mạng LAN để nhắn tin mã hóa.",
+        "NSBonjourServices": [
+          "_sentinell._tcp"
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "vn.hdu.sentinell",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png",
+        "backgroundColor": "#0b1020"
+      },
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "CHANGE_WIFI_MULTICAST_STATE"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0b1020",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Sentinell dùng camera để quét mã QR trao đổi khóa.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Sentinell cần truy cập ảnh để gửi ảnh mã hóa."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      "react-native-quick-crypto"
+    ]
+  }
+}

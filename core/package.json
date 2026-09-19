@@ -1,0 +1,16 @@
+{
+  "name": "@sentinell/core",
+  "version": "3.17.0",
+  "description": "Lõi giao thức mật mã Sentinell — dùng chung cho desktop (Electron), web (điện thoại) và mobile (React Native)",
+  "type": "module",
+  "main": "protocol.js",
+  "exports": {
+    ".": "./protocol.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@noble/ciphers": "^2.0.0",
+    "@noble/curves": "^2.0.0",
+    "@noble/hashes": "^2.0.0"
+  }
+}

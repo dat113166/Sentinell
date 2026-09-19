@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo hàm băm SHA-256</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="logo">#️⃣ Hàm băm SHA-256</div>
+      <span class="spacer"></span>
+      <a href="index.html" class="muted">← các demo khác</a>
+    </header>
+    <p class="muted">Hàm băm mật mã có tính "lan truyền" (avalanche): thay đổi dù chỉ một ký tự cũng làm
+      mã băm thay đổi hoàn toàn. Đây là nền tảng để kiểm tra toàn vẹn dữ liệu (giáo trình 4.1.2) và cho HMAC.</p>
+
+    <div class="card">
+      <label class="muted">Văn bản 1</label>
+      <input id="t1" type="text" value="Chuyen tien 1000000 VND" style="width:100%;margin:6px 0;padding:10px" />
+      <div class="url mono" id="h1">—</div>
+
+      <label class="muted" style="margin-top:14px;display:block">Văn bản 2 (thử đổi 1 ký tự so với trên)</label>
+      <input id="t2" type="text" value="Chuyen tien 9000000 VND" style="width:100%;margin:6px 0;padding:10px" />
+      <div class="url mono" id="h2">—</div>
+
+      <div class="status-line" style="margin-top:12px">
+        <span id="diffText" class="pill">—</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { sha256, bytesToHex, utf8ToBytes } from "../vendor/noble.js";
+    const $=id=>document.getElementById(id);
+
+    function hexOf(s){ return bytesToHex(sha256(utf8ToBytes(s))); }
+    function bitDiff(hexA, hexB){
+      let diff=0, total=hexA.length*4;
+      for(let i=0;i<hexA.length;i++){
+        let x = parseInt(hexA[i],16) ^ parseInt(hexB[i],16);
+        while(x){ diff+=x&1; x>>=1; }
+      }
+      return {diff, total};
+    }
+    function render(){
+      const a=hexOf($('t1').value), b=hexOf($('t2').value);
+      $('h1').textContent=a; $('h2').textContent=b;
+      const {diff,total}=bitDiff(a,b);
+      const pct=(diff/total*100).toFixed(1);
+      $('diffText').textContent = a===b
+        ? "Hai mã băm GIỐNG hệt nhau (văn bản y hệt)."
+        : `Khác nhau ${diff}/${total} bit (${pct}%) — dù đầu vào chỉ khác vài ký tự.`;
+    }
+    $('t1').addEventListener('input', render);
+    $('t2').addEventListener('input', render);
+    render();
+  </script>
+</body>
+</html>

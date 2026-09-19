@@ -1,0 +1,71 @@
+{
+  "name": "sentinell-desktop",
+  "version": "3.17.0",
+  "description": "Sentinell — app desktop nhắn tin bảo mật đầu cuối P2P (Electron)",
+  "type": "module",
+  "main": "main.js",
+  "license": "MIT",
+  "scripts": {
+    "build:web": "esbuild ../core/protocol.js --bundle --format=esm --minify --outfile=../web/vendor/protocol.bundle.js",
+    "build:server": "esbuild server/index.js --bundle --platform=node --format=esm --target=node20 --external:ws --external:express --external:bonjour-service --external:sql.js --external:electron --outfile=dist/server.mjs",
+    "build": "npm run icons && npm run build:web && npm run build:server",
+    "icons": "node scripts/gen-icon.mjs",
+    "start": "npm run build && electron .",
+    "node": "node server/index.js",
+    "dist": "node scripts/dist-retry.mjs",
+    "dist:once": "npm run build && electron-builder --win"
+  },
+  "dependencies": {
+    "@sentinell/core": "file:../core",
+    "bonjour-service": "^1.3.0",
+    "express": "^5.1.0",
+    "sql.js": "^1.13.0",
+    "ws": "^8.18.0"
+  },
+  "author": "Sentinell — đồ án ATBMTT",
+  "devDependencies": {
+    "electron": "44.3.0",
+    "electron-builder": "^26.0.0",
+    "esbuild": "^0.28.0"
+  },
+  "build": {
+    "appId": "vn.hdu.sentinell",
+    "productName": "Sentinell",
+    "electronVersion": "44.3.0",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "popup.js",
+      "dist/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web",
+        "to": "web"
+      },
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "win": {
+      "icon": "assets/icon.png",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Sentinell"
+    },
+    "portable": {
+      "artifactName": "Sentinell-portable-${version}.exe"
+    }
+  }
+}

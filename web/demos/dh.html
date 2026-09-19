@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo Diffie–Hellman</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="logo">🔑 Diffie–Hellman</div>
+      <span class="spacer"></span>
+      <a href="index.html" class="muted">← các demo khác</a>
+    </header>
+
+    <div class="card">
+      <p class="muted">Hai bên A và B thống nhất công khai số nguyên tố <b>p</b> và phần tử sinh <b>g</b>.
+        Mỗi bên giữ bí mật số mũ của mình. Bí mật chung được tính ra giống nhau mà không hề gửi khóa lên kênh.
+        Cơ sở an toàn: bài toán logarit rời rạc (mục 4.2). Giá trị mặc định lấy đúng ví dụ mục 4.4.</p>
+      <div class="row">
+        <label>p (số nguyên tố) <input id="p" type="number" value="17" style="width:90px"></label>
+        <label>g (phần tử sinh) <input id="g" type="number" value="3" style="width:90px"></label>
+        <label>a (bí mật của A) <input id="a" type="number" value="4" style="width:90px"></label>
+        <label>b (bí mật của B) <input id="b" type="number" value="7" style="width:90px"></label>
+        <button class="btn" id="run">Tính</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Các bước</h2>
+      <div class="log" id="out" style="min-height:auto"></div>
+    </div>
+  </div>
+
+  <script>
+    function modpow(base, exp, mod) {
+      base %= mod; let r = 1n;
+      while (exp > 0n) { if (exp & 1n) r = (r * base) % mod; base = (base * base) % mod; exp >>= 1n; }
+      return r;
+    }
+    function isPrime(n){ if(n<2n)return false; for(let i=2n;i*i<=n;i++){ if(n%i===0n)return false; } return true; }
+
+    function run() {
+      const p = BigInt(document.getElementById('p').value);
+      const g = BigInt(document.getElementById('g').value);
+      const a = BigInt(document.getElementById('a').value);
+      const b = BigInt(document.getElementById('b').value);
+      const out = document.getElementById('out');
+      out.innerHTML = "";
+      const add = (cls, html) => { const d=document.createElement('div'); d.className='entry '+(cls||''); d.innerHTML=html; out.appendChild(d); };
+
+      if (!isPrime(p)) add('warn', `⚠️ p=${p} không phải số nguyên tố — ví dụ vẫn chạy nhưng không an toàn.`);
+      add('', `Công khai: p=${p}, g=${g}. (Kẻ nghe lén thấy được p, g và hai giá trị công khai bên dưới.)`);
+      const A = modpow(g, a, p);
+      const B = modpow(g, b, p);
+      add('ok', `A gửi cho B: A = g^a mod p = ${g}^${a} mod ${p} = <b>${A}</b>`);
+      add('ok', `B gửi cho A: B = g^b mod p = ${g}^${b} mod ${p} = <b>${B}</b>`);
+      const KA = modpow(B, a, p);
+      const KB = modpow(A, b, p);
+      add('', `A tính khóa chung: K = B^a mod p = ${B}^${a} mod ${p} = <b>${KA}</b>`);
+      add('', `B tính khóa chung: K = A^b mod p = ${A}^${b} mod ${p} = <b>${KB}</b>`);
+      if (KA === KB) add('ok', `✅ Hai bên cùng thu được bí mật chung K = <b>${KA}</b> mà không gửi K lên kênh.`);
+      else add('bad', `❌ Không khớp (kiểm tra lại tham số).`);
+      add('warn', `Lưu ý (mục 4.5): DH thuần KHÔNG xác thực danh tính → dễ bị tấn công kẻ đứng giữa. App thật thêm chữ ký ECDSA + safety number để chống lại.`);
+    }
+    document.getElementById('run').addEventListener('click', run);
+    run();
+  </script>
+</body>
+</html>

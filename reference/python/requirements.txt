@@ -1,0 +1,6 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+websockets>=12
+zeroconf>=0.132
+cryptography>=42
+qrcode>=7.4

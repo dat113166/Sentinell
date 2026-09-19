@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo mã cổ điển</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="logo">🏛️ Mã cổ điển</div>
+      <span class="spacer"></span>
+      <a href="index.html" class="muted">← các demo khác</a>
+    </header>
+    <p class="muted">Hai hệ mã đối xứng cổ điển trong giáo trình (mục 2.2). Chúng dễ bị phá bằng phân tích tần suất —
+      minh họa vì sao cần mã hiện đại như AES.</p>
+
+    <div class="lobby">
+      <div class="card">
+        <h2>Hệ mã Caesar (dịch vòng)</h2>
+        <p class="muted">Dịch mỗi chữ cái đi k vị trí trong bảng chữ cái.</p>
+        <div class="row">
+          <label>k (khóa 0–25) <input id="ck" type="number" value="3" style="width:80px"></label>
+        </div>
+        <label class="muted">Văn bản</label>
+        <input id="cin" type="text" value="XIN CHAO" style="width:100%;margin:6px 0;padding:8px" />
+        <div class="row">
+          <button class="btn" id="cenc">Mã hóa →</button>
+          <button class="btn ghost" id="cdec">← Giải mã</button>
+        </div>
+        <div class="url" id="cout" style="margin-top:8px">—</div>
+      </div>
+
+      <div class="card">
+        <h2>Hệ mã Vigenère</h2>
+        <p class="muted">Dùng một từ khóa lặp lại làm dãy độ dịch — mạnh hơn Caesar.</p>
+        <div class="row">
+          <label>Từ khóa <input id="vk" type="text" value="KEY" style="width:120px"></label>
+        </div>
+        <label class="muted">Văn bản</label>
+        <input id="vin" type="text" value="XIN CHAO" style="width:100%;margin:6px 0;padding:8px" />
+        <div class="row">
+          <button class="btn" id="venc">Mã hóa →</button>
+          <button class="btn ghost" id="vdec">← Giải mã</button>
+        </div>
+        <div class="url" id="vout" style="margin-top:8px">—</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const A = 'A'.charCodeAt(0);
+    const clean = s => s.toUpperCase();
+    function caesar(text, k, dec){
+      k = ((dec ? -k : k) % 26 + 26) % 26;
+      return clean(text).replace(/[A-Z]/g, c => String.fromCharCode((c.charCodeAt(0)-A+k)%26+A));
+    }
+    function vigenere(text, key, dec){
+      key = clean(key).replace(/[^A-Z]/g,'');
+      if(!key) return text;
+      let j=0;
+      return clean(text).replace(/[A-Z]/g, c=>{
+        let k = key.charCodeAt(j%key.length)-A; if(dec) k=-k;
+        j++;
+        return String.fromCharCode(((c.charCodeAt(0)-A+k)%26+26)%26+A);
+      });
+    }
+    const $=id=>document.getElementById(id);
+    $('cenc').onclick=()=>$('cout').textContent=caesar($('cin').value, +$('ck').value, false);
+    $('cdec').onclick=()=>$('cout').textContent=caesar($('cin').value, +$('ck').value, true);
+    $('venc').onclick=()=>$('vout').textContent=vigenere($('vin').value, $('vk').value, false);
+    $('vdec').onclick=()=>$('vout').textContent=vigenere($('vin').value, $('vk').value, true);
+    $('cenc').click(); $('venc').click();
+  </script>
+</body>
+</html>

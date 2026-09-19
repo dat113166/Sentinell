@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node
+node_modules/
+desktop/dist/
+desktop/release/
+scripts/vectors.json
+scripts/js-out.json
+
+# Expo / React Native
+mobile/.expo/
+mobile/.export-check/
+mobile/android/
+mobile/ios/
+*.tsbuildinfo
+
+# Dữ liệu cục bộ của node (khóa, tin nhắn, file) — KHÔNG commit
+data/
+data-*/
+*.log

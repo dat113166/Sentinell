@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "sentinell",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["desktop/server/index.js", "--port", "8000", "--data", "./data-a"],
+      "port": 8000
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "name": "sentinell-monorepo",
+  "private": true,
+  "description": "Sentinell — nhắn tin bảo mật đầu cuối P2P (đồ án ATBMTT)",
+  "workspaces": [
+    "core",
+    "desktop",
+    "mobile"
+  ],
+  "scripts": {
+    "desktop": "npm --workspace desktop run start",
+    "desktop:build": "npm --workspace desktop run dist",
+    "mobile": "npm --workspace mobile run start",
+    "mobile:web": "npm --workspace mobile run web",
+    "web:bundle": "npm --workspace desktop run build:web",
+    "test:vectors": "node scripts/test-vectors.mjs",
+    "test:binary": "node scripts/test-binary.mjs",
+    "test:file": "node scripts/test-file-transfer.mjs",
+    "test:search": "node scripts/test-search.mjs",
+    "test:account": "node scripts/test-account.mjs",
+    "test": "npm run test:vectors && npm run test:binary && npm run test:search && npm run test:account && npm run test:lan && npm run test:file && npm run test:wsserver && npm run test:phone",
+    "test:lan": "node scripts/test-lan.mjs",
+    "test:wsserver": "node --no-warnings scripts/test-wsserver.mjs",
+    "test:phone": "node --no-warnings scripts/test-phone-peer.mjs"
+  }
+}

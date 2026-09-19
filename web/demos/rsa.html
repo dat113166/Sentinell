@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo RSA</title>
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="logo">🔐 RSA</div>
+      <span class="spacer"></span>
+      <a href="index.html" class="muted">← các demo khác</a>
+    </header>
+
+    <div class="card">
+      <p class="muted">RSA dựa trên bài toán phân tích số nguyên lớn ra thừa số nguyên tố (mục 1.3.1 giáo trình).
+        Ở đây dùng số rất nhỏ để thấy toàn bộ phép tính. Thực tế n dài 2048–4096 bit.</p>
+      <div class="row">
+        <label>p (nguyên tố) <input id="p" type="number" value="61" style="width:90px"></label>
+        <label>q (nguyên tố) <input id="q" type="number" value="53" style="width:90px"></label>
+        <label>e (số mũ công khai) <input id="e" type="number" value="17" style="width:90px"></label>
+        <label>m (bản rõ, số) <input id="m" type="number" value="65" style="width:90px"></label>
+        <button class="btn" id="run">Chạy</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Sinh khóa · Mã hóa/Giải mã · Ký/Xác minh</h2>
+      <div class="log" id="out" style="min-height:auto"></div>
+    </div>
+  </div>
+
+  <script>
+    function modpow(base, exp, mod){ base%=mod; let r=1n; while(exp>0n){ if(exp&1n) r=(r*base)%mod; base=(base*base)%mod; exp>>=1n; } return r; }
+    function egcd(a,b){ if(b===0n) return [a,1n,0n]; const [g,x,y]=egcd(b,a%b); return [g,y,x-(a/b)*y]; }
+    function modinv(a,m){ let [g,x]=egcd(((a%m)+m)%m,m); if(g!==1n) return null; return ((x%m)+m)%m; }
+    function isPrime(n){ if(n<2n)return false; for(let i=2n;i*i<=n;i++){ if(n%i===0n)return false; } return true; }
+
+    function run(){
+      const p=BigInt(document.getElementById('p').value), q=BigInt(document.getElementById('q').value);
+      const e=BigInt(document.getElementById('e').value), m=BigInt(document.getElementById('m').value);
+      const out=document.getElementById('out'); out.innerHTML="";
+      const add=(cls,html)=>{ const d=document.createElement('div'); d.className='entry '+(cls||''); d.innerHTML=html; out.appendChild(d); };
+
+      if(!isPrime(p)||!isPrime(q)){ add('bad','❌ p và q phải là số nguyên tố.'); return; }
+      const n=p*q, phi=(p-1n)*(q-1n);
+      add('', `n = p·q = ${p}·${q} = <b>${n}</b> (modulus công khai)`);
+      add('', `φ(n) = (p-1)(q-1) = ${phi}`);
+      const g=egcd(e,phi)[0];
+      if(g!==1n){ add('bad',`❌ e=${e} không nguyên tố cùng nhau với φ(n)=${phi}. Chọn e khác.`); return; }
+      const d=modinv(e,phi);
+      add('ok', `Khóa công khai: (n=${n}, e=${e})`);
+      add('ok', `Khóa bí mật:  d = e⁻¹ mod φ(n) = <b>${d}</b>  → (n=${n}, d=${d})`);
+      if(m>=n){ add('warn',`⚠️ m=${m} ≥ n=${n}; bản rõ phải nhỏ hơn n. Giảm m hoặc tăng p,q.`); return; }
+
+      const c=modpow(m,e,n);
+      add('', `— Mã hóa —`);
+      add('', `c = m^e mod n = ${m}^${e} mod ${n} = <b>${c}</b>`);
+      const m2=modpow(c,d,n);
+      add(m2===m?'ok':'bad', `Giải mã: m = c^d mod n = ${c}^${d} mod ${n} = <b>${m2}</b> ${m2===m?'✅ khớp bản rõ':'❌'}`);
+
+      add('', `— Chữ ký số (ký bằng khóa bí mật, xác minh bằng khóa công khai) —`);
+      const s=modpow(m,d,n);
+      add('', `Chữ ký: s = m^d mod n = <b>${s}</b>`);
+      const v=modpow(s,e,n);
+      add(v===m?'ok':'bad', `Xác minh: s^e mod n = ${v} ${v===m?'✅ = m → chữ ký hợp lệ':'❌'}`);
+    }
+    document.getElementById('run').addEventListener('click', run);
+    run();
+  </script>
+</body>
+</html>
