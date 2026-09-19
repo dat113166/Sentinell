@@ -323,7 +323,8 @@ không chỉ là yêu cầu hình thức: nó gánh luôn phần bảo mật mà
 | **Phiên chết** | Một bên rớt mạng/tắt đột ngột → bên kia tự dọn phiên (nhịp tim ping/pong) thay vì kẹt “đang bận” |
 | **Mobile ↔ PC** | App mobile bắt tay và **chat hai chiều** với node desktop; safety number **khớp** hai bên; nhật ký giao thức đủ 8 bước; lịch sử lưu **mã hóa at-rest** và nạp lại đúng sau khi khởi động lại app |
 | **Máy chủ WebSocket của điện thoại** (`npm run test:wsserver`, 26 mục) | Thư viện `ws` của desktop bắt tay đúng vector RFC 6455; tin chữ UTF-8, nhị phân 300 KB, tin chia 3 khung nguyên vẹn; khung quá lớn → 1009, không mặt nạ → 1002; peer im lặng bị ngắt; một phiên Sentinell thật chạy qua nó |
-| **Điện thoại nghe, PC gọi** (`npm run test:phone`, 23 mục) | Node desktop THẬT gọi vào điện thoại: duyệt khóa lạ, giữ chữ ký tới sớm, **ghép đôi hai chiều**, tệp 600 KB/300 KB hai chiều, người thứ ba bị báo bận, chế độ chặt từ chối thẳng, kẻ mạo danh bị phát hiện |
+| **Điện thoại nghe, PC gọi** (`npm run test:phone`, 31 mục) | Node desktop THẬT gọi vào điện thoại: duyệt khóa lạ, giữ chữ ký tới sớm, **ghép đôi hai chiều**, tệp 600 KB/300 KB hai chiều, người thứ ba bị báo bận, chế độ chặt từ chối thẳng, kẻ mạo danh bị phát hiện |
+| **Hai điện thoại, không có máy tính** (trong `test:phone`) | Cả hai đầu đều là mã của app mobile: B quét QR của A → A duyệt → ghép đôi hai chiều, safety number khớp, nhắn hai chiều, tệp 400 KB SHA-256 khớp. Chưa quay trên hai điện thoại thật |
 | **Bản build Android** (máy ảo Android 16) | PC gọi vào điện thoại → hộp duyệt → chat hai chiều; mDNS thấy chính quảng bá của máy; đang khóa thì không nghe cổng nào; đặt/đổi mật khẩu, sai mật khẩu bị từ chối, xoay khóa khi có mật khẩu vẫn mở lại đúng khóa mới; rời app > 5 phút tự khóa |
 | **Chi phí scrypt trên điện thoại** | Bản JS thuần trên Hermes (không JIT): N=2¹⁴ mất **17,7 s** — không dùng được. Bản native (OpenSSL): N=2¹⁴ **153 ms**, N=2¹⁷ **626 ms** → dùng mức OWASP như desktop |
 

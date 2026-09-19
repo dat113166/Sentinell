@@ -166,6 +166,41 @@ console.log("\n--- kẻ mạo danh: khóa không khớp khóa đã ghim ---");
   giaSrv.close();
 }
 
+// ================================================================== 6. HAI ĐIỆN THOẠI (không có máy tính)
+// Cả hai đầu đều là mã của app mobile: B quét QR của A (mang h/p + mã ghép đôi) rồi gọi thẳng
+// vào máy chủ của A. Không có node desktop nào tham gia phiên này — đúng mô hình ngang hàng.
+console.log("\n--- hai điện thoại nhắn thẳng với nhau (B quét QR của A) ---");
+{
+  await cho(300);
+  const kpB = genKeypair();
+  const dtB = { priv: kpB.priv, pub: kpB.pub, name: "Điện thoại B" };
+  maQr = newPairCode();                       // A đang hiện mã mới trên QR
+  suDT.approval.length = 0;
+  const truoc = suDT.connected.length;
+  const nhanB = [], vaoB = [];
+  const B = new PeerLink({
+    identity: dtB, expectPub: dienThoai.pub, pairCode: maQr,   // lấy từ QR của A
+    lookupContact: async () => null,
+    onConnected: (i) => vaoB.push(i), onMessage: (m) => nhanB.push(m), onNotice: () => {}, onDisconnected: () => {},
+  });
+  B.connect("127.0.0.1", congDT);
+  dat("A hỏi duyệt B (khóa B chưa có trong danh bạ A)", await doiDen(() => suDT.approval.length === 1));
+  phien.approve();
+  dat("hai điện thoại vào phòng", await doiDen(() => vaoB.length === 1 && suDT.connected.length > truoc));
+  const vaoA = suDT.connected.at(-1) || {};
+  dat("B: khóa A khớp khóa lấy từ QR ⇒ tin cậy", vaoB[0]?.trusted === true);
+  dat("A: B chứng minh đã quét mã của A ⇒ ghép đôi hai chiều", vaoA.peerProvedPair === true);
+  dat("safety number hai điện thoại khớp", B.session.safety === phien.session.safety);
+  B.sendText("B gửi A — không qua máy tính nào");
+  dat("A giải mã tin của B", await doiDen(() => suDT.msg.some((m) => m.text === "B gửi A — không qua máy tính nào")));
+  phien.sendText("A trả lời B");
+  dat("B giải mã tin của A", await doiDen(() => nhanB.some((m) => m.text === "A trả lời B")));
+  const tep = crypto.randomBytes(400 * 1024);
+  B.sendFile({ base64: tep.toString("base64"), name: "anh-tu-B.jpg", mime: "image/jpeg" });
+  dat("A nhận tệp 400 KB của B, SHA-256 khớp", await doiDen(() => suDT.msg.some((m) => m.type === "file" && m.name === "anh-tu-B.jpg" && m.integrity === true), 8000));
+  B.close();
+}
+
 mayChuDT.close();
 await D.stop();
 fs.rmSync(thuMuc, { recursive: true, force: true });

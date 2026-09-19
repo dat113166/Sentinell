@@ -1,74 +1,123 @@
-# 🛡️ Sentinell — Nhắn tin bảo mật đầu cuối P2P giữa các thiết bị trên LAN
+# 🛡️ Sentinell — Nhắn tin mã hóa đầu cuối, ngang hàng, không máy chủ
 
-> **Phiên bản 3.6.0** — xem [CHANGELOG.md](CHANGELOG.md) để biết từng bản đã đổi gì.
+> **Phiên bản 3.17.0** · [Tải về (Releases)](https://github.com/dat113166/Sentinell/releases/latest) ·
+> [Báo cáo đồ án](docs/BAOCAO.md) · [Lịch sử thay đổi](CHANGELOG.md)
 
-Ứng dụng nhắn tin **mã hóa đầu cuối (E2EE)** theo mô hình **ngang hàng (P2P)**: mỗi thiết bị
-là một *node* độc lập, tự tìm thấy nhau trên LAN/hotspot, trao đổi khóa qua QR và nhắn tin
-trực tiếp — **không có máy chủ trung gian nào đọc được nội dung**. Đồ án môn *An toàn và
-Bảo mật thông tin*.
+Đồ án môn *An toàn và Bảo mật thông tin* (ĐH Hồng Đức): hai **ứng dụng cài trên máy** — app
+**Windows** và app **Android** — nhắn tin **mã hóa đầu cuối (E2EE)** trực tiếp với nhau theo mô
+hình **ngang hàng (P2P)**. Không có máy chủ trung tâm, không có đám mây: mỗi thiết bị tự sinh và
+**tự giữ khóa bí mật của mình**, tự tìm nhau trong mạng LAN, trao đổi khóa qua QR, rồi nói chuyện
+thẳng với nhau.
 
-**Một lõi giao thức (JavaScript) — nhiều nền tảng:**
+## Mô hình ngang hàng
 
-| Nền tảng | Trạng thái | Cách dùng |
+```
+   ┌──────────────┐            ┌──────────────┐            ┌──────────────┐
+   │ App Windows  │◄──────────►│ App Android  │◄──────────►│ App Android  │
+   │  (.exe)      │  E2EE P2P  │  (.apk)      │  E2EE P2P  │  (.apk)      │
+   │ khóa: DPAPI  │            │ khóa:Keystore│            │ khóa:Keystore│
+   └──────▲───────┘            └──────────────┘            └──────────────┘
+          │                 mọi cặp thiết bị đều nói chuyện TRỰC TIẾP
+          ▼
+   ┌──────────────┐
+   │ App Windows  │     Không có máy chủ trung gian · không có đám mây ·
+   └──────────────┘     hai điện thoại nhắn nhau KHÔNG cần máy tính
+```
+
+- **Mỗi thiết bị là một nút ngang hàng (node):** vừa **nhận** kết nối vừa **gọi** đi — giống
+  BitTorrent. "Nhận kết nối" không biến thiết bị thành máy chủ trung tâm: không ai đứng giữa,
+  không ai giữ tin nhắn hay khóa của người khác.
+- **Khóa bí mật không bao giờ rời thiết bị.** Windows: bọc bằng DPAPI (`safeStorage`). Android:
+  Keystore (`expo-secure-store`). Cả hai có thể **bọc thêm bằng mật khẩu** (scrypt → AES-256-GCM).
+- **Nối thẳng không qua router:** một điện thoại bật **điểm phát sóng**, máy kia vào thẳng — giữa
+  hai máy không còn thiết bị nào khác. Dùng chung WiFi cũng được (router chỉ chuyển gói bản mã).
+- **Dữ liệu rời máy đã là bản mã:** ECDH P-256 tạm thời + chữ ký ECDSA + HKDF + AES-256-GCM, đổi
+  khóa sau **mỗi** tin (forward secrecy). Wireshark chỉ thấy hex bản mã.
+
+## Hai ứng dụng
+
+| | 💻 **App Windows** | 📱 **App Android** |
 |---|---|---|
-| 💻 **PC (Windows)** — app Electron, có `.exe` | ✅ | `npm run desktop` hoặc chạy `Sentinell.exe` |
-| 📱 **Điện thoại qua trình duyệt** (không cài app) | ✅ | Quét QR trên PC → mở trang `/join` |
-| 📱 **Android** — app đầy đủ (APK) | ✅ | Cài `Sentinell-android-<phiên bản>.apk` — tự nghe kết nối, tìm LAN, mật khẩu |
-| 📱 **iPhone** — qua Expo Go | ✅ | `npm run mobile` → quét QR bằng **Expo Go** (không cần Mac; chỉ gọi đi được) |
-| 🐍 **Python** — bản tham chiếu + test vector | ✅ | `reference/python/` — vẫn là peer hợp lệ |
+| Cài đặt | `Sentinell-portable-3.17.0.exe` (chạy luôn) hoặc bản Setup | `Sentinell-android-3.17.0.apk` (Android 7+) |
+| Công nghệ | Electron + Node.js | React Native: giao diện Android thật (không phải trang web nhúng) + mô-đun native (TCP, NSD, Keystore, OpenSSL) |
+| Nhận kết nối | ✅ cổng 8000 (tự dời nếu bận) | ✅ cổng 8000 — máy chủ WebSocket tự viết theo RFC 6455 |
+| Tìm nhau trong LAN | ✅ mDNS `_sentinell._tcp` | ✅ mDNS qua NsdManager của Android |
+| Giữ khóa bí mật | DPAPI + mật khẩu tùy chọn (scrypt N=2¹⁷) | Keystore + mật khẩu tùy chọn (scrypt native N=2¹⁷, tự khóa sau 5 phút rời app) |
+| Lịch sử | SQLite, **mã hóa at-rest** | SQLite, **mã hóa at-rest** |
+| QR | Hiện + quét (camera hoặc ảnh) | Hiện + quét bằng camera |
+| Gửi tệp/ảnh | ✅ mọi loại tệp (tối đa 200 MB) | ✅ gửi ảnh · nhận mọi loại tệp |
+
+Cả hai chạy **cùng một lõi giao thức** `core/protocol.js` (thư viện mật mã đã kiểm định `@noble`),
+nên nói chuyện được với nhau theo mọi chiều.
+
+### Các cặp kết nối đã kiểm
+
+| Kết nối | Kết quả |
+|---|---|
+| Windows ↔ Windows | ✅ giữa các node: app Electron, bản `.exe` đóng gói, node Node.js (và node Python tham chiếu) |
+| Android → Windows (điện thoại gọi) | ✅ máy ảo Android 16 ↔ node Windows |
+| Windows → Android (máy tính gọi, điện thoại nhận) | ✅ máy ảo Android 16: hộp duyệt → nhắn hai chiều |
+| Android ↔ Android | ✅ bài kiểm tự động — cả hai đầu là mã của app, không có máy tính (`npm run test:phone`) · ⏳ **chưa quay trên hai điện thoại thật** |
+| Tìm nhau bằng mDNS | ✅ Windows ↔ Windows ↔ Python · Android: đăng ký/dò/phân giải chạy (máy ảo thấy chính nó) · ⏳ hai điện thoại thật |
 
 ## Đáp ứng 5 tiêu chí đề bài
 
-| # | Tiêu chí | Cách Sentinell đáp ứng |
-|---|---|---|
-| 1 | **Lưu trữ cục bộ** | Khóa trong `identity.json` (khóa bí mật bọc bằng **DPAPI/Keychain** qua Electron `safeStorage`); tin nhắn trong SQLite **mã hóa at-rest** AES-256-GCM. |
-| 2 | **Quản lý khóa (tạo, đổi)** | Tự sinh ECDSA P-256; **xoay khóa** (giữ khóa cũ, lịch sử vẫn đọc được); **sao lưu / phục hồi**; ghim khóa liên hệ. |
-| 3 | **Nhắn tin mã hóa** | ECDHE + chữ ký ECDSA + HKDF + AES-256-GCM + ratchet mỗi tin (forward secrecy). Văn bản + file/ảnh. |
-| 4 | **Tìm kiếm trên LAN** | mDNS/DNS-SD (`_sentinell._tcp`) — node tự quảng bá & phát hiện nhau, không gõ IP. |
-| 5 | **Trao đổi khóa qua QR** | PC↔PC: quét QR khóa công khai (camera tại `localhost`). PC↔điện thoại: QR chứa **URL + khóa PC**, quét bằng camera hệ thống → tự ghim, chống mạo danh. |
+| # | Tiêu chí | Windows | Android |
+|---|---|---|---|
+| 1 | **Lưu trữ cục bộ** | `identity.json` bọc DPAPI; tin nhắn SQLite mã hóa AES-256-GCM | Khóa trong Keystore; tin nhắn SQLite mã hóa AES-256-GCM |
+| 2 | **Quản lý khóa (tạo, đổi)** | Tự sinh ECDSA P-256; **xoay khóa** (lịch sử vẫn đọc được); sao lưu có mật khẩu; mật khẩu tài khoản | Tự sinh; **xoay khóa**; mật khẩu bọc khóa (đặt/đổi/bỏ) |
+| 3 | **Nhắn tin mã hóa** | ECDHE + ECDSA + HKDF + AES-256-GCM + ratchet mỗi tin; chữ + tệp | Cùng giao thức; chữ + ảnh |
+| 4 | **Tìm kiếm trên LAN** | mDNS tự quảng bá & phát hiện | mDNS (NsdManager) |
+| 5 | **Trao đổi khóa qua QR** | QR mang khóa + địa chỉ + mã ghép đôi dùng một lần | Như Windows; quét xong là **ghim khóa và gọi sang luôn** |
 
-Chi tiết lý thuyết và ánh xạ tài liệu: [docs/BAOCAO.md](docs/BAOCAO.md).
+Chống mạo danh: khóa đã ghim qua QR phải **khớp** chữ ký trong bắt tay, lệch là hủy. Khóa lạ phải
+được **duyệt**; bật **chế độ chặt** thì chỉ nhận liên hệ đã ghim. Chi tiết lý thuyết và ánh xạ
+tài liệu: [docs/BAOCAO.md](docs/BAOCAO.md).
 
 ---
 
-## Kiến trúc
+## Dùng thử nhanh
+
+Tải tệp ở trang [Releases](https://github.com/dat113166/Sentinell/releases/latest) và kiểm mã
+băm SHA-256 ghi trên đó (`Get-FileHash <tệp> -Algorithm SHA256`).
+
+**Hai điện thoại Android:**
+1. Cài APK trên cả hai (cho phép *cài ứng dụng không rõ nguồn gốc*).
+2. Điện thoại A bật **điểm phát sóng**, điện thoại B vào mạng đó (hoặc cả hai cùng một WiFi).
+3. Mục **📡 Trong mạng LAN** tự hiện máy kia → bấm **Kết nối**. Hoặc B bấm **Mở camera quét QR**
+   và quét mã ở mục **📱 Khóa của điện thoại này** trên A → ghim khóa và vào chat ngay.
+4. A bấm **Chấp nhận** ở hộp *"Thiết bị lạ muốn kết nối"* → nhắn tin. Đối chiếu safety number
+   nếu kết nối không qua QR.
+
+**Windows ↔ Android / Windows ↔ Windows:** giống hệt — mở app, quét QR của máy kia (hoặc chọn
+trong danh sách LAN), bên được gọi bấm *Chấp nhận*.
+
+> Lần đầu mở app Windows, **tường lửa hỏi quyền mạng**: phải bấm *Allow* và tick **cả "Private
+> networks"**, không thì hai máy không thấy nhau. File `.exe` chưa ký số nên SmartScreen cảnh
+> báo → *More info → Run anyway*.
+
+## Kiến trúc mã nguồn
 
 ```
-core/protocol.js            Lõi giao thức (JS, @noble) — dùng chung mọi nền tảng
-├─ desktop/  (Electron)     Node.js: mDNS (bonjour-service) + WebSocket /peer + SQLite + safeStorage
-│                           Renderer: giao diện web/  →  Sentinell.exe
-├─ web/      (UI chung)     index.html (UI app) · join.html (điện thoại qua web) · demos/
-├─ mobile/   (Expo RN)      Android/iOS: camera quét QR, SecureStore (Keychain/Keystore), SQLite
-└─ reference/python/        Bản tham chiếu Python; scripts/ kiểm chứng interop Python↔JS
+core/protocol.js     Lõi giao thức (JS, @noble) — dùng chung cho mọi ứng dụng
+desktop/             App Windows (Electron)
+  server/            phần "node" chạy trong app: nhận kết nối P2P (/peer), mDNS, SQLite, khóa
+                     (tên thư mục là "server" theo nghĩa socket nghe — KHÔNG phải máy chủ trung tâm)
+web/                 Giao diện của app Windows (index.html) + trang phụ /join + demo thuật toán
+mobile/              App Android (React Native / Expo)
+  src/wsproto.js     máy chủ WebSocket RFC 6455 tự viết — để điện thoại NHẬN kết nối
+  src/transport.js   phiên P2P, dùng cho cả gọi đi lẫn nhận vào
+  src/discovery.js   mDNS · src/storage.js  Keystore + mật khẩu + SQLite mã hóa
+reference/python/    Bản tham chiếu Python — kiểm interop (cùng kết quả với bản JS)
+scripts/             8 bộ kiểm tra tự động (npm test)
 ```
 
-- **Node là đầu cuối thật**: mật mã chạy trong tiến trình của từng thiết bị; dữ liệu rời máy
-  đã là bản mã. Giữa hai node không có ai ở giữa.
-- **Điện thoại qua web ("chế độ Lai")**: PC hiện QR `http://<ip>:<port>/join#k=<khóa PC>`;
-  điện thoại quét bằng camera hệ thống → trang `/join` chạy **cùng lõi giao thức trong
-  trình duyệt**, ghim khóa PC lấy từ QR (out-of-band), rồi bắt tay thẳng với `/peer` của PC.
-  PC **không giữ khóa của điện thoại**. Giao diện PC mở ở `localhost` nên camera quét QR của
-  điện thoại (để ghim ngược) cũng hoạt động.
+## Cài đặt & build từ mã nguồn
 
-## Cài đặt
+Yêu cầu **Node.js 20+**. Tại thư mục gốc: `npm install`.
 
-Yêu cầu **Node.js 20+**. Tại thư mục gốc:
-
-```bash
-npm install
-```
-
-(Python 3.10+ chỉ cần nếu muốn chạy bản tham chiếu / test interop: `pip install -r reference/python/requirements.txt`.)
-
-## Chạy
-
-**App desktop (Electron):**
-
-```bash
-npm run desktop
-```
-
-**Thử 2 thiết bị trên 1 máy** (hai node, hai cổng, hai kho dữ liệu):
+**App Windows:** `npm run desktop` (chạy thử) · `npm run desktop:build` (đóng gói `.exe` vào
+`desktop/release/`). Thử hai node trên một máy:
 
 ```bash
 npm --workspace desktop run node -- --port 8000 --data ./data-a
@@ -78,151 +127,10 @@ npm --workspace desktop run node -- --port 8000 --data ./data-a
 npm --workspace desktop run node -- --port 8001 --data ./data-b
 ```
 
-rồi mở `http://127.0.0.1:8000/` và `http://127.0.0.1:8001/`. (Electron cũng nhận `--port`/`--data`:
-`npm run desktop -- --port 8001 --data ./data-b`.)
+rồi mở `http://127.0.0.1:8000/` và `http://127.0.0.1:8001/`.
 
-**Đóng gói `.exe`** (NSIS installer + bản portable, xuất ra `desktop/release/`):
-
-```bash
-npm run desktop:build
-```
-
-### Gửi bản `.exe` cho người khác
-
-`Sentinell-portable-<phiên bản>.exe` (~113 MB) là **một file tự chứa** — máy nhận **không cần cài
-Python, Node.js** hay bất cứ thứ gì. Chỉ cần chép file và chạy. Bốn điều nên dặn trước:
-
-| Điều họ sẽ gặp | Cách xử lý |
-|---|---|
-| **SmartScreen**: “Windows protected your PC” | File **chưa ký số** → bấm *More info → Run anyway*. Muốn hết cảnh báo phải mua chứng chỉ ký code. |
-| **Tường lửa Windows hỏi quyền mạng** | **Bắt buộc bấm Allow**, và nhớ tick **cả “Private networks”** (WiFi nhà thường là Private) — không cho thì hai máy không thấy nhau. |
-| **Máy kia cũng cần app** để chat PC↔PC | Hoặc họ dùng **điện thoại quét mã QR** → vào chat bằng trình duyệt, không cần cài gì. |
-| **Chỉ chạy trên Windows x64** | macOS/Linux phải build riêng trên đúng hệ đó. |
-
-Dữ liệu (khóa, tin nhắn) lưu ở `%APPDATA%\sentinell-desktop\` — **không** nằm cạnh file exe.
-Xóa exe thì tài khoản vẫn còn; muốn xóa sạch phải xóa thư mục đó.
-
-Nếu cổng 8000 trên máy họ đã bị chiếm, app **tự chuyển sang cổng trống kế tiếp** (8001…8019);
-trường hợp không còn cổng nào, app hiện hộp thoại báo lỗi thay vì thoát im lặng.
-
-## Giao diện
-
-Bố cục như một app nhắn tin: **thanh biểu tượng** bên trái → **danh sách trò chuyện** →
-**phòng chat** → **bảng bảo mật** bật/tắt bằng nút 🛡.
-
-| Biểu tượng | Nội dung |
-|---|---|
-| 💬 Trò chuyện | danh sách cuộc trò chuyện: avatar, tin nhắn cuối, giờ |
-| 📡 LAN | thiết bị tự tìm thấy qua mDNS (có chấm báo khi xuất hiện máy mới) |
-| 🔑 Khóa | danh tính, mã QR, ghim khóa, chế độ chặt, sao lưu / xoay khóa |
-| 📜 Nhật ký | mọi thông báo kết nối, ghép đôi và lỗi |
-| 🌙 Nền | chuyển nền sáng ↔ tối (mặc định theo hệ thống, nhớ lựa chọn) |
-
-Bảng 🛡 hiện **safety number** và **nhật ký giao thức** ngay cạnh khung chat — thấy được
-mật mã đang chạy trong lúc nhắn tin.
-
-Màn hẹp dưới 900px (điện thoại, cửa sổ nhỏ) tự gập thành **một cột**: thanh biểu tượng
-chuyển xuống thành tab đáy, mở một cuộc trò chuyện thì phòng chat chiếm hết màn kèm nút quay lại.
-
-## Cách dùng
-
-1. Mở Sentinell trên hai máy cùng WiFi/hotspot → tab **📡 LAN** tự hiện nhau.
-2. Máy A vào tab **🔑 Khóa** → **Hiện khóa & mã QR** → **một mã duy nhất** dùng cho mọi thiết bị.
-3. Máy B đọc mã đó, chọn cách nào tiện:
-   - **điện thoại**: quét bằng camera thường → mở thẳng trang chat;
-   - **máy tính**: A bấm **💾 Tải ảnh QR về** hoặc **📋 Chép liên kết**, gửi sang B,
-     B vào **📷 Quét QR** → *Tải ảnh QR* (hoặc dán chuỗi).
-4. Máy A bấm **Chấp nhận** ở hộp *"Có thiết bị muốn nhắn tin"* → vào chat ngay,
-   huy hiệu *"đã xác minh (ghim QR) ✓"*, safety number khớp.
-5. Nhắn tin, gửi file/ảnh. Lịch sử lưu mã hóa trên máy, tự nạp lại khi kết nối lại.
-
-> Mã đã kèm sẵn địa chỉ máy A, nên B đọc xong là **ghim khóa và kết nối luôn** — không phải
-> đi tìm nút Kết nối. Đừng **chụp màn hình** mã QR: ảnh chụp hay bị thu nhỏ nên máy kia đọc
-> không ra; dùng nút *Tải ảnh QR về* hoặc *Chép liên kết*.
-
-**Ai được phép kết nối vào?** Khóa lạ luôn phải qua hộp duyệt (tự từ chối sau 60s). Tick
-**"Chỉ nhận kết nối từ liên hệ đã ghim khóa"** thì người lạ bị chặn thẳng, khỏi hỏi.
-
-## Chạy ngầm trong khay hệ thống
-
-Bấm **✕** chỉ **thu cửa sổ về khay** — app vẫn chạy và vẫn nhận tin nhắn, giống Zalo/Telegram.
-Chuột phải vào biểu tượng khiên ở khay để: mở lại cửa sổ, hiện mã QR ghép đôi, chép địa chỉ
-máy, bật/tắt thông báo, hoặc **Thoát Sentinell** (đây mới là cách tắt hẳn).
-
-**Thông báo** hiện dưới dạng toast của Windows khi có **tin nhắn mới** hoặc **thiết bị mới
-kết nối**, nhưng **chỉ khi bạn không đang nhìn cửa sổ** — cửa sổ bị che, thu nhỏ, hoặc app
-đang chạy ngầm. Đang mở và focus thì không làm phiền. Bấm vào thông báo là mở lại cửa sổ.
-
-> Thông báo **cố ý không hiện tên người gửi hay nội dung tin**, chỉ hiện tiêu đề kiểu
-> *"Tin nhắn mới"*. Toast nằm trên màn hình khóa và được lưu vào trung tâm thông báo của
-> Windows — để nội dung rò ra ở đó thì mã hóa đầu cuối còn ý nghĩa gì. Ở tầng node, móc
-> thông báo cũng chỉ nhận **loại sự kiện**, không nhận tên lẫn nội dung.
-
-## Xóa một cuộc trò chuyện
-
-**Vuốt hàng trò chuyện sang trái** (trên máy tính thì kéo bằng chuột) → hiện nút **Xóa** đỏ.
-Xóa sẽ bỏ toàn bộ tin nhắn đã lưu **trên máy này** và bỏ ghim khóa của liên hệ đó — muốn nhắn
-lại thì phải quét QR một lần nữa. Tin nhắn ở máy bên kia không bị ảnh hưởng.
-
-## Điện thoại dùng trình duyệt thì KHÔNG nhận được cuộc gọi đến
-
-Trang `/join` chỉ là một trang web trong trình duyệt — nó không mở cổng nào, nên máy tính
-**không thể chủ động gọi sang**. Muốn nhắn lại: để điện thoại mở mã QR của máy tính rồi bấm
-*Kết nối*. Máy tính ↔ máy tính thì bên nào gọi trước cũng được, vì cả hai đều tự lắng nghe.
-
-App Android (bản APK) thì khác: nó **tự lắng nghe** (cổng 8000), nên máy tính và điện thoại
-khác gọi sang bình thường — QR của điện thoại mang kèm địa chỉ, máy tính quét là gọi sang luôn.
-
-## Ghép đôi: quét MỘT lần, hai bên nhớ nhau
-
-QR mang theo một **mã ghép đôi dùng một lần** (dạng 3 từ, ví dụ `gau-mong-nau`). Bên quét gửi
-kèm một *bằng chứng* HMAC gắn với đúng phiên đó, nên bên hiện QR **tự ghim khóa của bên quét**.
-
-Chỉ cần **một bên quét một lần**:
-- Cả hai cùng lưu nhau vào **Đã ghim qua QR**, kèm địa chỉ gặp gần nhất.
-- **Bên nào cũng bấm “Nhắn lại” được** để mở lại cuộc trò chuyện cũ — không phải quét ngược.
-- Mã tự đổi sau khi dùng; bằng chứng gắn với transcript nên kẻ nghe lén **không tái dùng được**.
-
-Không quét được camera? Đọc **mã 3 từ** cho nhau, hoặc dán chuỗi khóa / tải ảnh QR.
-
-Địa chỉ LAN của máy hiện sẵn ở tab **🔑 Khóa** kèm nút chép, để gõ nhanh vào ô “Kết nối thủ công”
-(trong tab **📡 LAN**) của thiết bị kia khi mạng chặn QR.
-
-Máy có nhiều card mạng (VirtualBox, WSL, VPN) thì cửa sổ QR có thêm **ô chọn địa chỉ** — đổi sang
-card khác nếu điện thoại quét xong mà trang cứ xoay không tải.
-
-## Kiểm chứng interop (Python ↔ JavaScript)
-
-Bản Python tham chiếu và lõi JS phải cho **cùng kết quả** với cùng đầu vào — đây là bằng chứng
-giao thức được đặc tả chặt, không phụ thuộc ngôn ngữ:
-
-```bash
-npm run test:vectors
-```
-
-(sinh vector bằng Python → JS kiểm chứng transcript/khóa dẫn xuất/safety number, xác minh chữ
-ký DER của Python và giải mã bản mã của Python → Python xác minh & giải mã ngược lại.)
-Ngoài ra node Python (`python reference/python/app.py --port 8003`) **hiện lên trong danh sách
-LAN và chat được** với node Electron.
-
-## Nơi lưu dữ liệu
-
-Electron: `%APPDATA%\sentinell-desktop\sentinell-data\` (hoặc thư mục `--data`):
-`identity.json` (khóa bí mật đã bọc DPAPI), `contacts.json`, `messages.db` (mã hóa at-rest), `files/`.
-
-## Kiểm chứng bằng Wireshark
-
-Bắt gói giữa hai máy, filter theo cổng node; khung WebSocket `/peer` chỉ là **hex bản mã** (`ct`).
-
-## App Android đầy đủ (APK)
-
-Bản build thật (không phải Expo Go) là một **node đầy đủ** như máy tính: tự nghe kết nối (máy chủ
-WebSocket tự viết, `mobile/src/wsproto.js`), tìm máy trong LAN bằng mDNS, khóa bí mật bọc bằng
-mật khẩu (scrypt native), rời app quá 5 phút thì tự khóa. Có sẵn APK thì chỉ cần chép sang điện
-thoại và cài (cho phép "cài ứng dụng không rõ nguồn gốc").
-
-Tự build APK trên Windows (cần Android Studio + SDK, và **JDK 17** — JDK 25 đi kèm Android Studio
-làm bước CMake của Gradle hỏng):
+**App Android** (cần Android Studio + SDK và **JDK 17** — JDK 25 đi kèm Android Studio làm bước
+CMake của Gradle hỏng):
 
 ```powershell
 cd mobile
@@ -234,57 +142,81 @@ cd android
 # → mobile\android\app\build\outputs\apk\release\app-release.apk
 ```
 
-APK này ký bằng khóa debug: đủ để cài và demo, chưa đưa lên cửa hàng được.
+APK ký bằng khóa debug: đủ để cài và demo, chưa đưa lên cửa hàng được. Thử không cần điện thoại:
+máy ảo Android trong Android Studio (từ trong máy ảo, máy tính là `10.0.2.2`; muốn máy tính gọi
+vào máy ảo thì `adb forward tcp:8100 tcp:8000` rồi gọi `127.0.0.1:8100`). mDNS giữa máy ảo và
+LAN thật không thông — phần đó phải thử bằng điện thoại thật.
 
-Thử không cần điện thoại: máy ảo Android 16 (x86_64) trong Android Studio. Máy ảo nằm sau mạng
-riêng nên từ trong đó máy tính là `10.0.2.2`; muốn máy tính gọi vào máy ảo thì
-`adb forward tcp:8100 tcp:8000` rồi gọi `127.0.0.1:8100`. mDNS giữa máy ảo và LAN thật **không**
-thông — phần đó phải thử bằng điện thoại thật.
-
-## iPhone qua Expo Go
-
-Chạy bằng **Expo Go** — không cần build, **không cần máy Mac**. Expo Go không có các mô-đun
-native của bản Android (TCP, mDNS, scrypt native) nên ở đây điện thoại **chỉ gọi đi** được:
-
-1. Cài **Expo Go** (Google Play / App Store) trên điện thoại.
-2. Trên PC, cùng WiFi với điện thoại:
+## Kiểm chứng
 
 ```bash
-npm run mobile
+npm test
 ```
 
-3. Quét mã QR hiện trong terminal: **Android** dùng chính app Expo Go; **iPhone** dùng app
-   Camera rồi mở bằng Expo Go.
+Chạy 8 bộ kiểm: test vector chéo **Python ↔ JS** (hai cài đặt khác ngôn ngữ cho cùng transcript,
+khóa dẫn xuất, safety number, và giải mã được của nhau), khung nhị phân, truyền tệp, tìm kiếm,
+tài khoản/mật khẩu, bảo mật LAN, **máy chủ WebSocket của điện thoại** (chạy với chính thư viện
+`ws` của app Windows), và **phiên P2P của điện thoại** (node Windows thật gọi vào điện thoại; hai
+điện thoại nhắn thẳng; duyệt, ghép đôi hai chiều, chế độ chặt, bận, phát hiện mạo danh).
 
-> **iPhone báo “You need to be signed in to Expo Go and Expo CLI”?**
-> Đây **không phải lỗi của app** — từ SDK 57, Expo Go **trên iOS** bắt buộc đăng nhập ở **cả hai
-> đầu** bằng **cùng một tài khoản Expo** (tài khoản miễn phí). Cách xử lý:
-> 1. Trên PC: `npx expo login`
-> 2. Trong app Expo Go: tab **Home** → chạm **avatar góc trên phải** → đăng nhập cùng tài khoản đó
-> 3. Quét lại QR.
->
-> Yêu cầu này **chưa áp dụng cho Android** (Expo Go Android chạy được ngay, không cần đăng nhập)
-> và **không áp dụng** cho development build hay máy giả lập.
-4. Trong app: bấm **“Mở camera quét QR”**, quét mã *“Mời điện thoại”* trên màn hình PC
-   (mục 🔑 Khóa & QR của tôi) → điện thoại tự ghim khóa PC và bắt tay mã hóa.
+**Wireshark:** bắt gói giữa hai máy, lọc theo cổng 8000 — khung WebSocket chỉ chứa **hex bản mã**.
 
-Điện thoại là **đầu cuối thật**: khóa nằm trong Keychain (iOS) / Keystore (Android) qua
-`expo-secure-store`, lịch sử tin nhắn trong SQLite **mã hóa at-rest**, mã hóa/giải mã chạy
-ngay trên máy bằng cùng `core/protocol.js`.
+---
 
-Muốn xem/thử app mobile mà không có điện thoại (tiện khi demo trên máy chiếu):
+## Bảo mật trong cách dùng
 
-```bash
-npm run mobile:web
-```
+**Ghép đôi: quét MỘT lần, hai bên nhớ nhau.** QR mang theo **mã ghép đôi dùng một lần** (3 từ, ví
+dụ `gau-mong-nau`). Bên quét gửi kèm bằng chứng HMAC gắn với đúng phiên đó, nên bên hiện QR **tự
+ghim khóa của bên quét**. Cả hai lưu nhau kèm địa chỉ, bên nào cũng gọi lại được. Mã đổi sau khi
+dùng; bằng chứng gắn với transcript nên kẻ nghe lén không tái dùng được. Không quét được camera
+thì đọc mã 3 từ cho nhau, hoặc dán chuỗi khóa / tải ảnh QR.
 
-chạy chính app đó trong trình duyệt (camera không dùng được — hãy dùng “Kết nối thủ công”).
+**Ai được phép kết nối vào?** Khóa lạ luôn phải qua hộp duyệt (tự từ chối sau 60 giây). Bật
+**chế độ chặt** thì người lạ bị chặn thẳng. Đang trò chuyện mà có người thứ ba gọi vào → họ nhận
+"bận", phiên hiện tại không bị ảnh hưởng.
 
-**Giới hạn:** trong Expo Go điện thoại chỉ **kết nối ra** một node đang lắng nghe (PC, hoặc
-điện thoại Android bản APK). iOS ngoài Expo Go cần tài khoản Apple Developer hoặc máy Mac.
+**Máy đang khóa thì coi như không có mặt trên mạng.** Khi đặt mật khẩu, lúc chưa mở khóa app
+không nhận kết nối, không quảng bá mDNS, không đọc được lịch sử.
+
+**Thông báo không lộ nội dung.** Toast của Windows chỉ hiện tiêu đề kiểu *"Tin nhắn mới"* — không
+tên người gửi, không nội dung (toast nằm cả trên màn hình khóa và trung tâm thông báo).
+
+**Xóa có thùng rác (app Windows).** Xóa cuộc trò chuyện → vào mục *Đã xóa*, không tìm kiếm ra
+được; khôi phục hoặc xóa vĩnh viễn (khi đó tệp dữ liệu được dọn lại để không còn sót bản mã cũ).
+
+## App Windows — vài điều nên biết
+
+- Bấm **✕** chỉ **thu về khay hệ thống** — app vẫn nhận tin như Zalo/Telegram. Thoát hẳn: chuột
+  phải biểu tượng khiên → **Thoát Sentinell**.
+- Dữ liệu ở `%APPDATA%\sentinell-desktop\` — không nằm cạnh file `.exe`; xóa `.exe` thì tài
+  khoản vẫn còn.
+- Cổng 8000 bị chiếm thì app tự dời sang cổng trống kế tiếp (8001…8019).
+- Giao diện: 💬 Trò chuyện · 📡 LAN · 🔑 Khóa & QR · 📜 Nhật ký · 🌙 Nền sáng/tối; bảng 🛡 hiện
+  **safety number** và **nhật ký giao thức** ngay cạnh khung chat.
+
+---
+
+## Chế độ phụ (không phải P2P đầy đủ)
+
+Hai chế độ dưới đây chỉ để **xem thử nhanh trên máy không cài app**. Chúng **không** đáp ứng mô
+hình ngang hàng như hai ứng dụng chính, và được giữ lại có chủ đích với giới hạn ghi rõ:
+
+**Điện thoại mở bằng trình duyệt (`/join`)** — app Windows hiện QR `http://<ip>:<port>/join#k=…`,
+điện thoại quét bằng camera thường → trang web **tải từ máy tính** chạy cùng lõi giao thức trong
+trình duyệt và bắt tay thẳng với máy tính. Mã hóa vẫn đầu cuối (máy tính không giữ khóa của điện
+thoại), **nhưng**: điện thoại phụ thuộc máy tính để tải trang, **không nhận được kết nối**, **không
+lưu gì** (khóa chỉ sống trong phiên), và mã JavaScript đi qua HTTP nên phải tin mạng đang dùng —
+xem mục 7b của báo cáo. Vì vậy app chỉ phục vụ trang này trong mạng con đã chọn, trong 30 phút,
+kèm cảnh báo loại mạng.
+
+**iPhone qua Expo Go** — `npm run mobile` rồi quét QR bằng Expo Go (không cần máy Mac). Expo Go
+không có mô-đun native (TCP, mDNS, scrypt native) nên iPhone ở đây **chỉ gọi đi** được tới một
+node đang nghe. Làm app iOS đầy đủ cần tài khoản Apple Developer hoặc máy Mac.
+> iPhone báo *"You need to be signed in to Expo Go and Expo CLI"*: đăng nhập **cùng một tài khoản
+> Expo** ở cả hai đầu (`npx expo login` trên PC, avatar trong app Expo Go) rồi quét lại.
 
 ## Lưu ý
 
-- Đồ án học tập: giao thức là bản rút gọn theo bài giảng, không thay thế ứng dụng đã kiểm định.
-- mDNS cần cùng mạng L2; nếu mạng chặn multicast, dùng **Kết nối thủ công (IP:cổng)**.
-- Chạy hai bản trên cùng máy để thử → dùng `--data` khác nhau để tách kho khóa/tin nhắn.
+- Đồ án học tập: giao thức rút gọn theo bài giảng (chưa đầy đủ như Signal X3DH/Double Ratchet),
+  không thay thế ứng dụng đã được kiểm định độc lập.
+- mDNS cần cùng mạng L2; mạng chặn multicast thì dùng **Kết nối thủ công (IP:cổng)**.

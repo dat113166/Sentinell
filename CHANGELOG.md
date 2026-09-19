@@ -12,6 +12,22 @@
 
 ---
 
+## Chưa phát hành — tài liệu lấy hai ứng dụng P2P làm trung tâm
+
+Thầy xem repo và hiểu là "web app, máy chủ là laptop" — hiểu như vậy có lý, vì README mở đầu bằng
+chế độ điện thoại-qua-trình-duyệt (`/join`, đúng là tải trang từ laptop) và còn ghi bản 3.6.0.
+
+- **README viết lại:** mở đầu bằng mô hình ngang hàng giữa **app Windows và app Android**, bảng
+  so sánh hai app, bảng các cặp kết nối **đã kiểm / chưa kiểm**, 5 tiêu chí theo từng app.
+  `/join` và iPhone-qua-Expo-Go chuyển xuống mục **"Chế độ phụ (không phải P2P đầy đủ)"**, ghi rõ
+  giới hạn. Giải thích thư mục `desktop/server/` là socket nghe của node, không phải máy chủ
+  trung tâm.
+- **Bài kiểm mới — hai điện thoại, không có máy tính:** cả hai đầu là `PeerLink` của app mobile;
+  B quét QR của A → duyệt → ghép đôi hai chiều → nhắn + tệp 400 KB. `test:phone` nay 31 mục.
+  Vẫn chưa quay trên hai điện thoại thật.
+
+---
+
 ## 3.17.0 — Bản Android thành "node" đầy đủ: nghe kết nối, tìm LAN, mật khẩu
 
 Trước bản này điện thoại chỉ GỌI ĐI được: máy tính không gọi sang được, hai điện thoại không
